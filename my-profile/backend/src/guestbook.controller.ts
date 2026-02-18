@@ -1,12 +1,20 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
-import { GuestbookService } from './guestbook.service';
+import { Controller, Post, Body } from '@nestjs/common';
+import { createClient } from '@supabase/supabase-js';
 
-@Controller('guestbook')
+@Controller('api')
 export class GuestbookController {
-  constructor(private readonly service: GuestbookService) {}
+  private supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY
+  );
 
-  @Get() getAll() { return this.service.findAll(); }
-  @Post() create(@Body() dto: any) { return this.service.create(dto); }
-  @Put(':id') update(@Param('id') id: string, @Body() dto: any) { return this.service.update(id, dto); }
-  @Delete(':id') remove(@Param('id') id: string) { return this.service.delete(id); }
+  @Post('guestbook')
+  async createEntry(@Body() entry: { name: string; message: string }) {
+    const { data, error } = await this.supabase
+      .from('guestbook') // Ensure this table name matches Supabase
+      .insert([entry]);
+    
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  }
 }
